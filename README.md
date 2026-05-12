@@ -39,6 +39,7 @@ git clone https://github.com/linopix/ets2-management.git
 
 cd ets2-management
 bash install.sh
+```
 
 ## Manual Installation
 
