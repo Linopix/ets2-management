@@ -608,113 +608,21 @@ docker compose up -d</div>
 // ══════════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════════
-let API = localStorage.getItem('ets2_api_url') || '';
-if (!API) {
-  // Auto-detect API URL
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  if (isLocalhost) {
-    API = 'http://localhost:3001';
-  } else {
-    // Assume frontend on port 8080, backend on 3001
-    API = window.location.protocol + '//' + window.location.hostname + ':3001';
-  }
-  localStorage.setItem('ets2_api_url', API);
+let API = '';
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+if (isLocalhost) {
+  API = 'http://localhost:3001';
+} else {
+  API = window.location.protocol + '//' + window.location.hostname + ':3001';
 }
+localStorage.setItem('ets2_api_url', API);
 
 function getApiUrl() {
-<<<<<<< HEAD
   return API;
-=======
-  return localStorage.getItem('ets2_api_url') || '';
-}
-
-function setApiUrl(url) {
-  API = url;
-  localStorage.setItem('ets2_api_url', url);
-  const authInput = document.getElementById('server-url-input');
-  const settingsInput = document.getElementById('settings-server-url');
-  if (authInput) authInput.value = url;
-  if (settingsInput) settingsInput.value = url;
 }
 
 function getCurrentApiUrl() {
-  const authInput = document.getElementById('server-url-input');
-  const settingsInput = document.getElementById('settings-server-url');
-  const typed = (authInput?.value || settingsInput?.value || '').trim();
-  return typed || getApiUrl();
-}
-
-function isValidUrl(url) {
-  try {
-    const normalized = url.trim();
-    return /^https?:\/\/.+/.test(normalized);
-  } catch {
-    return false;
-  }
-}
-
-async function checkApiConnection(url) {
-  if (!url || !isValidUrl(url)) return false;
-  try {
-    const healthUrl = url.replace(/\/+$/, '') + '/api/health';
-    const res = await fetch(healthUrl, { method: 'GET' });
-    const data = await res.json();
-    return res.ok && data?.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function saveServerUrl() {
-  const input = document.getElementById('server-url-input');
-  const url = input.value.trim();
-  if (!url) {
-    alert('Bitte geben Sie eine Server-URL ein (z.B. http://localhost:3001 oder http://192.168.1.100:8080)');
-    return;
-  }
-  if (!isValidUrl(url)) {
-    alert('Ungültige Server-URL. Bitte das Format http://... oder https://... verwenden.');
-    return;
-  }
-  setApiUrl(url);
-  document.getElementById('auth-error').textContent = 'Server-URL gespeichert! ✓';
-  document.getElementById('auth-error').style.color = 'var(--green)';
-  const connected = await checkApiConnection(url);
-  if (!connected) {
-    document.getElementById('auth-error').textContent = 'Server nicht erreichbar. Bitte URL prüfen.';
-    document.getElementById('auth-error').style.color = 'var(--red)';
-    setSyncState('error');
-    return;
-  }
-  setSyncState('ok');
-  setTimeout(() => {
-    document.getElementById('auth-error').textContent = '';
-    document.getElementById('auth-error').style.color = 'var(--red)';
-  }, 2000);
-}
-
-function resetServerUrl() {
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const defaultUrl = isLocalhost ? 'http://localhost:3001' : '';
-  setApiUrl(defaultUrl);
-  document.getElementById('server-url-input').value = defaultUrl;
-  document.getElementById('auth-error').textContent = 'Auf Standard zurückgesetzt.';
-  document.getElementById('auth-error').style.color = 'var(--green)';
-  setTimeout(() => {
-    document.getElementById('auth-error').textContent = '';
-    document.getElementById('auth-error').style.color = 'var(--red)';
-  }, 1500);
-}
-
-function initServerUrlInput() {
-  const input = document.getElementById('server-url-input');
-  if (input) {
-    input.value = getApiUrl();
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') saveServerUrl();
-    });
-  }
->>>>>>> 4d31da408445d9b0be38f9fa8655e936fd45f7be
+  return getApiUrl();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1424,14 +1332,8 @@ function resetSettingsServerUrl(){
   const isLocalhost=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1';
   const defaultUrl=isLocalhost?'http://localhost:3001':'';
   setApiUrl(defaultUrl);
-  document.getElementById('settings-server-url').value=defaultUrl;
-  const status=document.getElementById('server-url-status');
-  status.textContent='↻ Auf Standard zurückgesetzt.';
-  status.style.color='var(--green)';
-  setTimeout(()=>{status.textContent='';},1500);
 }
 
->>>>>>> 4d31da408445d9b0be38f9fa8655e936fd45f7be
 async function changePassword(){
   const oldP=document.getElementById('pw-old').value;
   const newP=document.getElementById('pw-new').value;
