@@ -733,13 +733,19 @@ async function doLogin() {
   if (!isValidUrl(currentApi)) { setAuthError('Ungültige Server-URL.'); setSyncState('error'); return; }
   setApiUrl(currentApi);
   setSyncState('syncing');
-  const res = await fetch(currentApi.replace(/\/+$/, '') + '/api/login', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({username, password})
-  });
-  const data = await res.json();
-  if (!res.ok) { setAuthError(data.error||'Fehler'); setSyncState('error'); return; }
-  loginSuccess(data.token, data.username);
+  try {
+    const res = await fetch(currentApi.replace(/\/+$/, '') + '/api/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (!res.ok) { setAuthError(data.error||'Fehler'); setSyncState('error'); return; }
+    loginSuccess(data.token, data.username);
+  } catch (error) {
+    console.error(error);
+    setAuthError('Verbindung zum Server fehlgeschlagen.');
+    setSyncState('error');
+  }
 }
 
 async function doRegister() {
@@ -752,14 +758,19 @@ async function doRegister() {
   if (!currentApi) { setAuthError('Bitte Server-URL konfigurieren.'); setSyncState('error'); return; }
   if (!isValidUrl(currentApi)) { setAuthError('Ungültige Server-URL.'); setSyncState('error'); return; }
   setApiUrl(currentApi);
-  const res = await fetch(currentApi.replace(/\/+$/, '') + '/api/register', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-
-    body: JSON.stringify({username, password})
-  });
-  const data = await res.json();
-  if (!res.ok) { setAuthError(data.error||'Fehler'); return; }
-  loginSuccess(data.token, data.username);
+  try {
+    const res = await fetch(currentApi.replace(/\/+$/, '') + '/api/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (!res.ok) { setAuthError(data.error||'Fehler'); setSyncState('error'); return; }
+    loginSuccess(data.token, data.username);
+  } catch (error) {
+    console.error(error);
+    setAuthError('Verbindung zum Server fehlgeschlagen.');
+    setSyncState('error');
+  }
 }
 
 function setAuthError(msg) { document.getElementById('auth-error').textContent=msg; }
