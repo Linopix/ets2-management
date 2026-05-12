@@ -38,6 +38,14 @@ That said, the application is functional and works well enough for my own ETS2 s
 git clone https://github.com/linopix/ets2-management.git
 
 cd ets2-management
+bash install.sh
+
+## Manual Installation
+
+```bash
+git clone https://github.com/linopix/ets2-management.git
+
+cd ets2-management
 
 cp backend/.env.example backend/.env
 
@@ -51,7 +59,14 @@ Open:
 http://localhost:2006
 ```
 
-## Update
+## Update-Script
+
+```bash
+bash update.sh
+```
+
+
+## Manual Update
 
 ```bash
 docker compose down
