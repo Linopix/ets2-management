@@ -621,13 +621,18 @@ function getApiUrl() {
   return API;
 }
 
+function setApiUrl(url) {
+  API = url;
+  localStorage.setItem('ets2_api_url', url);
+}
+
 function getCurrentApiUrl() {
   return getApiUrl();
 }
 
 // ══════════════════════════════════════════════════════════════════
 // STATIC DATA
-// ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 const ETS2_COUNTRIES = ["Albanien","Belgien","Bosnien & Herzegowina","Bulgarien","Dänemark","Deutschland",
   "Estland","Finnland","Frankreich","Griechenland","Irland","Italien","Kosovo","Kroatien",
   "Lettland","Litauen","Luxemburg","Montenegro","Niederlande","Nordmazedonien","Norwegen",
