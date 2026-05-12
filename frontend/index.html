@@ -608,13 +608,12 @@ docker compose up -d</div>
 // ══════════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════════
-let API = '';
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-if (isLocalhost) {
-  API = 'http://localhost:3001';
-} else {
-  API = window.location.protocol + '//' + window.location.hostname + ':3001';
+let API = 'http://localhost:3001';
+const hostname = window.location.hostname;
+if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+  API = window.location.protocol + '//' + hostname + ':3001';
 }
+console.log('API URL set to:', API);
 localStorage.setItem('ets2_api_url', API);
 
 function getApiUrl() {
@@ -689,6 +688,7 @@ async function api(method, path, body) {
   setSyncState('syncing');
   try {
     const currentApi = getApiUrl();
+    console.log('Making API call to:', currentApi + path);
     if (!currentApi) throw new Error('API URL not configured');
     const res = await fetch(currentApi.replace(/\/+$/, '') + path, {
       method,
@@ -696,14 +696,15 @@ async function api(method, path, body) {
       body: body ? JSON.stringify(body) : undefined
     });
     const data = await res.json();
+    console.log('API response:', res.status, data);
     if (res.status === 401) { doLogout(); return null; }
     if (!res.ok) throw new Error(data.error || 'API error');
     setSyncState('ok');
     return data;
   } catch(e) {
+    console.error('API error:', e);
     setSyncState('error');
-    console.error(e);
-    return null;
+    throw e;
   }
 }
 
@@ -716,6 +717,15 @@ function setSyncState(s) {
 // ══════════════════════════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════════════════════════
+function isValidUrl(string) {
+  try {
+    new URL(string);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function switchAuthTab(tab, btn) {
   document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
