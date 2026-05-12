@@ -1,6 +1,7 @@
 services:
   backend:
     build: ./backend
+    image: linopix/ets2-backend:latest
     container_name: ets2-backend
     restart: unless-stopped
     env_file:
