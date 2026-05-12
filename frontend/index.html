@@ -260,12 +260,6 @@ label.form-label{font-size:.7rem;color:var(--dim);text-transform:uppercase;lette
   <div class="auth-card">
     <div class="auth-logo">ETS2</div>
     <div class="auth-sub">MANAGEMENT SYSTEM</div>
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.8rem">
-      <span style="color:var(--dim);min-width:fit-content">Server:</span>
-      <input class="auth-input" type="text" id="server-url-input" placeholder="http://localhost:3001" style="flex:1;min-width:150px;padding:6px 10px;font-size:.8rem;margin:0">
-      <button class="btn" onclick="saveServerUrl()" style="padding:5px 10px;font-size:.75rem">Speichern</button>
-      <button class="btn" onclick="resetServerUrl()" style="padding:5px 10px;font-size:.75rem;opacity:.7" title="Auf localhost zurücksetzen">✕</button>
-    </div>
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuthTab('login',this)">Anmelden</button>
       <button class="auth-tab" onclick="switchAuthTab('register',this)">Registrieren</button>
@@ -450,17 +444,6 @@ label.form-label{font-size:.7rem;color:var(--dim);text-transform:uppercase;lette
   </div>
 
   <div class="settings-panel">
-    <div class="settings-title">🌐 Server-Konfiguration</div>
-    <p style="color:var(--dim);font-size:.82rem;margin-bottom:10px">Server-URL für API-Anfragen. Speichern Sie die URL, wenn Sie zu einem anderen Server wechseln.</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <input class="form-input" type="text" id="settings-server-url" placeholder="http://localhost:3001" style="flex:1;min-width:250px;padding:8px 12px;font-size:.85rem">
-      <button class="btn primary" onclick="updateSettingsServerUrl()">✓ Speichern</button>
-      <button class="btn" onclick="resetSettingsServerUrl()" title="Auf Standard zurücksetzen">↻ Zurücksetzen</button>
-    </div>
-    <div id="server-url-status" style="color:var(--dim);font-size:.78rem;margin-top:8px;min-height:16px"></div>
-  </div>
-
-  <div class="settings-panel">
     <div class="settings-title">📤 Daten Export / Import</div>
     <p style="color:var(--dim);font-size:.82rem;margin-bottom:12px">Exportiere alle Daten als JSON-Datei für ein Backup oder zum Übertragen auf einen neuen Server.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -627,58 +610,19 @@ docker compose up -d</div>
 // ══════════════════════════════════════════════════════════════════
 let API = localStorage.getItem('ets2_api_url') || '';
 if (!API) {
-  // Auto-detect localhost on first load
+  // Auto-detect API URL
   const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  API = isLocalhost ? 'http://localhost:3001' : '';
+  if (isLocalhost) {
+    API = 'http://localhost:3001';
+  } else {
+    // Assume frontend on port 8080, backend on 3001
+    API = window.location.protocol + '//' + window.location.hostname + ':3001';
+  }
   localStorage.setItem('ets2_api_url', API);
 }
 
 function getApiUrl() {
-  return localStorage.getItem('ets2_api_url') || '';
-}
-
-function setApiUrl(url) {
-  API = url;
-  localStorage.setItem('ets2_api_url', url);
-}
-
-function saveServerUrl() {
-  const input = document.getElementById('server-url-input');
-  const url = input.value.trim();
-  if (!url) {
-    alert('Bitte geben Sie eine Server-URL ein (z.B. http://localhost:3001 oder http://192.168.1.100:8080)');
-    return;
-  }
-  setApiUrl(url);
-  document.getElementById('auth-error').textContent = 'Server-URL gespeichert! ✓';
-  document.getElementById('auth-error').style.color = 'var(--green)';
-  setTimeout(() => {
-    document.getElementById('auth-error').textContent = '';
-    document.getElementById('auth-error').style.color = 'var(--red)';
-  }, 2000);
-}
-
-function resetServerUrl() {
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const defaultUrl = isLocalhost ? 'http://localhost:3001' : '';
-  setApiUrl(defaultUrl);
-  document.getElementById('server-url-input').value = defaultUrl;
-  document.getElementById('auth-error').textContent = 'Auf Standard zurückgesetzt.';
-  document.getElementById('auth-error').style.color = 'var(--green)';
-  setTimeout(() => {
-    document.getElementById('auth-error').textContent = '';
-    document.getElementById('auth-error').style.color = 'var(--red)';
-  }, 1500);
-}
-
-function initServerUrlInput() {
-  const input = document.getElementById('server-url-input');
-  if (input) {
-    input.value = getApiUrl();
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') saveServerUrl();
-    });
-  }
+  return API;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1342,37 +1286,6 @@ async function importData(input){
 
 function openPwModal(){document.getElementById('pw-old').value='';document.getElementById('pw-new').value='';document.getElementById('pw-new2').value='';document.getElementById('pw-error').textContent='';openModal('pw-modal');}
 
-function initSettingsServerUrl(){
-  const input=document.getElementById('settings-server-url');
-  if(input) input.value=getApiUrl();
-}
-
-function updateSettingsServerUrl(){
-  const input=document.getElementById('settings-server-url');
-  const status=document.getElementById('server-url-status');
-  const url=input.value.trim();
-  if(!url){
-    status.textContent='❌ Bitte geben Sie eine Server-URL ein.';
-    status.style.color='var(--red)';
-    return;
-  }
-  setApiUrl(url);
-  status.textContent='✓ Server-URL gespeichert!';
-  status.style.color='var(--green)';
-  setTimeout(()=>{status.textContent='';},2000);
-}
-
-function resetSettingsServerUrl(){
-  const isLocalhost=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1';
-  const defaultUrl=isLocalhost?'http://localhost:3001':'';
-  setApiUrl(defaultUrl);
-  document.getElementById('settings-server-url').value=defaultUrl;
-  const status=document.getElementById('server-url-status');
-  status.textContent='↻ Auf Standard zurückgesetzt.';
-  status.style.color='var(--green)';
-  setTimeout(()=>{status.textContent='';},1500);
-}
-
 async function changePassword(){
   const oldP=document.getElementById('pw-old').value;
   const newP=document.getElementById('pw-new').value;
@@ -1404,7 +1317,6 @@ function showTab(id,btn){
   if(id==='garagen')renderGaragen();
   if(id==='roads')renderRoads();
   if(id==='erkundung')renderExplore();
-  if(id==='settings')initSettingsServerUrl();
 }
 
 function updateBadges(){
@@ -1424,10 +1336,8 @@ function closeImg(){document.getElementById('img-modal').classList.remove('open'
 // ══════════════════════════════════════════════════════════════════
 // AUTO LOGIN
 // ══════════════════════════════════════════════════════════════════
-initServerUrlInput();
 if(TOKEN){
   (async()=>{
-    API = getApiUrl();
     const me=await fetch(API+'/api/me',{headers:{'Authorization':'Bearer '+TOKEN}}).then(r=>r.ok?r.json():null).catch(()=>null);
     if(me){
       document.getElementById('auth-screen').style.display='none';
@@ -1438,11 +1348,8 @@ if(TOKEN){
       await loadAllData(); updateBadges(); renderFahrten();
     } else {
       TOKEN=''; localStorage.removeItem('ets2_token');
-      initServerUrlInput();
     }
   })();
-} else {
-  initServerUrlInput();
 }
 </script>
 </body>
