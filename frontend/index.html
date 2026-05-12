@@ -1294,46 +1294,6 @@ async function importData(input){
 
 function openPwModal(){document.getElementById('pw-old').value='';document.getElementById('pw-new').value='';document.getElementById('pw-new2').value='';document.getElementById('pw-error').textContent='';openModal('pw-modal');}
 
-<<<<<<< HEAD
-=======
-function initSettingsServerUrl(){
-  const input=document.getElementById('settings-server-url');
-  if(input) input.value=getApiUrl();
-}
-
-async function updateSettingsServerUrl(){
-  const input=document.getElementById('settings-server-url');
-  const status=document.getElementById('server-url-status');
-  const url=input.value.trim();
-  if(!url){
-    status.textContent='❌ Bitte geben Sie eine Server-URL ein.';
-    status.style.color='var(--red)';
-    return;
-  }
-  if(!isValidUrl(url)){
-    status.textContent='❌ Ungültige Server-URL.';
-    status.style.color='var(--red)';
-    return;
-  }
-  setApiUrl(url);
-  const connected = await checkApiConnection(url);
-  if (!connected) {
-    status.textContent='❌ Server nicht erreichbar. Bitte prüfen.';
-    status.style.color='var(--red)';
-    return;
-  }
-  status.textContent='✓ Server-URL gespeichert!';
-  status.style.color='var(--green)';
-  setSyncState('ok');
-  setTimeout(()=>{status.textContent='';},2000);
-}
-
-function resetSettingsServerUrl(){
-  const isLocalhost=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1';
-  const defaultUrl=isLocalhost?'http://localhost:3001':'';
-  setApiUrl(defaultUrl);
-}
-
 async function changePassword(){
   const oldP=document.getElementById('pw-old').value;
   const newP=document.getElementById('pw-new').value;
