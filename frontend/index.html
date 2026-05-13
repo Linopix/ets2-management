@@ -42,7 +42,8 @@
 <header>
   <div class="logo">ETS2 <small>MGMT</small></div>
   <nav class="tabs" id="main-tabs">
-    <button class="tab active" onclick="showTab('fahrtenbuch',this)">📋 Fahrtenbuch <span class="tab-badge" id="badge-fahrtenbuch">0</span></button>
+    <button class="tab active" onclick="showTab('dashboard',this)">📊 Dashboard</button>
+    <button class="tab" onclick="showTab('fahrtenbuch',this)">📋 Fahrtenbuch <span class="tab-badge" id="badge-fahrtenbuch">0</span></button>
     <button class="tab" onclick="showTab('fuhrpark',this)">🚛 Fuhrpark <span class="tab-badge" id="badge-fuhrpark">0</span></button>
     <button class="tab" onclick="showTab('fahrer',this)">👤 Fahrer <span class="tab-badge" id="badge-fahrer">0</span></button>
     <button class="tab" onclick="showTab('garagen',this)">🏭 Garagen <span class="tab-badge" id="badge-garagen">0</span></button>
@@ -56,6 +57,48 @@
     <button class="btn danger" onclick="doLogout()">Abmelden</button>
   </div>
 </header>
+
+<!-- DASHBOARD -->
+<div class="page" id="page-dashboard">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Dashboard</div>
+      <div class="stat-sub" style="margin-top:4px;color:var(--text);">Schneller Überblick zu Fahrten, Fuhrpark, Erkundung und Top-Statistiken.</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn" onclick="showTab('fahrtenbuch')">📋 Fahrtenbuch</button>
+      <button class="btn" onclick="showTab('erkundung')">🗺️ Erkundung</button>
+      <button class="btn" onclick="showTab('fuhrpark')">🚛 Fuhrpark</button>
+    </div>
+  </div>
+  <div class="stats-row" id="dashboard-stats"></div>
+  <div class="dashboard-grid">
+    <div class="dashboard-card">
+      <div class="dashboard-card-title">Top Fahrer</div>
+      <div id="dashboard-top-fahrer"></div>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card-title">Top Länder</div>
+      <div id="dashboard-top-laender"></div>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card-title">Letzte Fahrten</div>
+      <div id="dashboard-recent"></div>
+    </div>
+    <div class="dashboard-card">
+      <div class="dashboard-card-title">Erkundung</div>
+      <div id="dashboard-explore"></div>
+    </div>
+  </div>
+  <div class="dashboard-links">
+    <button class="dashboard-link" onclick="showTab('fahrtenbuch')">📋 Fahrtenbuch</button>
+    <button class="dashboard-link" onclick="showTab('fuhrpark')">🚛 Fuhrpark</button>
+    <button class="dashboard-link" onclick="showTab('fahrer')">👤 Fahrer</button>
+    <button class="dashboard-link" onclick="showTab('erkundung')">🗺️ Erkundung</button>
+    <button class="dashboard-link" onclick="showTab('roads')">🛣️ Secret Roads</button>
+    <button class="dashboard-link" onclick="showTab('settings')">⚙️ Einstellungen</button>
+  </div>
+</div>
 
 <!-- FAHRTENBUCH -->
 <div class="page active" id="page-fahrtenbuch">
@@ -208,7 +251,31 @@
   </div>
 
   <div class="settings-panel">
-    <div class="settings-title">🐳 Raspberry Pi / Docker Setup</div>
+    <div class="settings-title">�️ Länder & Städte verwalten</div>
+    <p style="color:var(--dim);font-size:.82rem;margin-bottom:12px">Füge fehlende Länder oder Städte hinzu, damit sie in Autocomplete und Erkundung verfügbar sind.</p>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:10px;align-items:end;">
+      <div class="form-group"><label class="form-label">Land wählen</label><select class="form-select" id="settings-country-select" onchange="renderLookupSettings()"></select></div>
+      <div class="form-group"><label class="form-label">Neue Stadt</label><input class="form-input" type="text" id="settings-city-add" placeholder="Neue Stadt"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn primary" onclick="addLookupCity()">Stadt hinzufügen</button>
+      <button class="btn" onclick="refreshLookupSettings()">Aktualisieren</button>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:10px;align-items:end;">
+      <div class="form-group"><label class="form-label">Neues Land</label><input class="form-input" type="text" id="settings-country-add" placeholder="Landname"></div>
+      <div class="form-group"><label class="form-label">ISO-Code (optional)</label><input class="form-input" type="text" id="settings-country-code" placeholder="DE"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn primary" onclick="addLookupCountry()">Land hinzufügen</button>
+    </div>
+    <div style="margin-top:12px">
+      <div class="form-label">Aktuelle Städte im Land</div>
+      <div id="settings-country-cities" style="padding:10px;border:1px solid var(--border);border-radius:8px;min-height:56px;background:var(--bg)"></div>
+    </div>
+  </div>
+
+  <div class="settings-panel">
+    <div class="settings-title">�🐳 Raspberry Pi / Docker Setup</div>
     <p style="color:var(--dim);font-size:.82rem;margin-bottom:8px">Dieses System läuft bereits in Docker. Zugriff im Heimnetz über <code style="color:var(--accent)">http://&lt;pi-ip&gt;:8080</code></p>
     <p style="color:var(--dim);font-size:.82rem;margin-bottom:6px">Für Updates:</p>
     <div class="docker-code">cd ets2-app
@@ -244,16 +311,23 @@ docker compose up -d</div>
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Datum</label><input class="form-input" type="date" id="f-datum"></div>
       <div class="form-group"><label class="form-label">Kennzeichen</label>
-        <div class="ac-wrap"><input class="form-input" type="text" id="f-kz" placeholder="B TW 235" autocomplete="off" oninput="acInput(this,'ac-kz',getTruckPlates)" onfocus="acInput(this,'ac-kz',getTruckPlates)"><div class="ac-list" id="ac-kz"></div></div></div>
+        <div class="ac-wrap"><input class="form-input" type="text" id="f-kz" placeholder="B TW 235" autocomplete="off" oninput="acInput(this,'ac-kz',getTruckPlates);calcFahrtNet()" onfocus="acInput(this,'ac-kz',getTruckPlates)"><div class="ac-list" id="ac-kz"></div></div></div>
       <div class="form-group"><label class="form-label">Fahrer</label>
         <div class="ac-wrap"><input class="form-input" type="text" id="f-fahrer" placeholder="Name" autocomplete="off" oninput="acInput(this,'ac-fahrer',getFahrerNames)" onfocus="acInput(this,'ac-fahrer',getFahrerNames)"><div class="ac-list" id="ac-fahrer"></div></div></div>
-      <div class="form-group"><label class="form-label">Distanz (km)</label><input class="form-input" type="number" id="f-km" placeholder="1250" oninput="calcFahrtNet()"></div>
+      <div class="form-group"><label class="form-label">Start KM</label><input class="form-input" type="number" id="f-start-km" placeholder="Start KM" oninput="calcFahrtNet()"></div>
+      <div class="form-group"><label class="form-label">Ende KM</label><input class="form-input" type="number" id="f-end-km" placeholder="Ende KM" oninput="calcFahrtNet()"></div>
     </div>
     <div class="form-grid">
+      <div class="form-group"><label class="form-label">Distanz (km)</label><input class="form-input" type="number" id="f-km" placeholder="1250" oninput="calcFahrtNet()"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end;gap:10px;">
+        <label class="checkbox-label" style="font-size:.9rem"><input type="checkbox" id="f-accept-km" onchange="calcFahrtNet()"> KM Stand übernehmen</label>
+      </div>
       <div class="form-group"><label class="form-label">Von Stadt</label>
-        <div class="ac-wrap"><input class="form-input" type="text" id="f-von" placeholder="Abfahrtsstadt" autocomplete="off" oninput="acInput(this,'ac-von',()=>ETS2_CITIES)" onfocus="acInput(this,'ac-von',()=>ETS2_CITIES)"><div class="ac-list" id="ac-von"></div></div></div>
+        <div class="ac-wrap"><input class="form-input" type="text" id="f-von" placeholder="Abfahrtsstadt" autocomplete="off" oninput="acInput(this,'ac-von',getAcCities)" onfocus="acInput(this,'ac-von',getAcCities)"><div class="ac-list" id="ac-von"></div></div></div>
       <div class="form-group"><label class="form-label">Nach Stadt</label>
-        <div class="ac-wrap"><input class="form-input" type="text" id="f-nach" placeholder="Zielstadt" autocomplete="off" oninput="acInput(this,'ac-nach',()=>ETS2_CITIES)" onfocus="acInput(this,'ac-nach',()=>ETS2_CITIES)"><div class="ac-list" id="ac-nach"></div></div></div>
+        <div class="ac-wrap"><input class="form-input" type="text" id="f-nach" placeholder="Zielstadt" autocomplete="off" oninput="acInput(this,'ac-nach',getAcCities)" onfocus="acInput(this,'ac-nach',getAcCities)"><div class="ac-list" id="ac-nach"></div></div></div>
+    </div>
+    <div class="form-grid">
       <div class="form-group"><label class="form-label">Von Land</label><select class="form-select" id="f-von-land"><option value="">– wählen –</option></select></div>
       <div class="form-group"><label class="form-label">Nach Land</label><select class="form-select" id="f-nach-land"><option value="">– wählen –</option></select></div>
     </div>
@@ -298,7 +372,7 @@ docker compose up -d</div>
       <div class="form-group"><label class="form-label">Letzte Fracht</label><input class="form-input" type="text" id="t-fracht"></div>
       <div class="form-group"><label class="form-label">Land</label><select class="form-select" id="t-land"></select></div>
       <div class="form-group"><label class="form-label">Stadt</label>
-        <div class="ac-wrap"><input class="form-input" type="text" id="t-stadt" autocomplete="off" oninput="acInput(this,'ac-t-stadt',()=>ETS2_CITIES)" onfocus="acInput(this,'ac-t-stadt',()=>ETS2_CITIES)"><div class="ac-list" id="ac-t-stadt"></div></div></div>
+        <div class="ac-wrap"><input class="form-input" type="text" id="t-stadt" autocomplete="off" oninput="acInput(this,'ac-t-stadt',getAcCities)" onfocus="acInput(this,'ac-t-stadt',getAcCities)"><div class="ac-list" id="ac-t-stadt"></div></div></div>
     </div>
   </div>
   <div class="modal-footer"><button class="btn" onclick="closeModal('truck-modal')">Abbrechen</button><button class="btn primary" onclick="saveTruck()">Speichern</button></div>
@@ -332,7 +406,7 @@ docker compose up -d</div>
   <div class="modal-body">
     <div class="form-grid">
       <div class="form-group span2"><label class="form-label">Ort / Name</label>
-        <div class="ac-wrap"><input class="form-input" type="text" id="g-name" autocomplete="off" oninput="acInput(this,'ac-g-name',()=>ETS2_CITIES)" onfocus="acInput(this,'ac-g-name',()=>ETS2_CITIES)"><div class="ac-list" id="ac-g-name"></div></div></div>
+        <input class="form-input" type="text" id="g-name"></div>
       <div class="form-group"><label class="form-label">Plätze</label><input class="form-input" type="number" id="g-plaetze"></div>
       <div class="form-group"><label class="form-label">Fahrer</label><input class="form-input" type="number" id="g-fahrer" oninput="calcGarage()"></div>
       <div class="form-group"><label class="form-label">Produktivität</label><input class="form-input" type="number" id="g-prod" step="0.01" oninput="calcGarage()"></div>

@@ -1,6 +1,185 @@
-const API_BASE = '/api';
+const API_BASE = (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.protocol === 'file:'
+) ? 'http://localhost:3001/api' : '/api';
 let USER = null;
 let DATA = {fahrten:[],trucks:[],fahrer:[],garagen:[],roads:{},explore:{}};
+
+const ETS2_COUNTRY_META = {
+  'Deutschland': {code:'DE', flag:'🇩🇪'},
+  'Österreich': {code:'AT', flag:'🇦🇹'},
+  'Schweiz': {code:'CH', flag:'🇨🇭'},
+  'Frankreich': {code:'FR', flag:'🇫🇷'},
+  'Italien': {code:'IT', flag:'🇮🇹'},
+  'Spanien': {code:'ES', flag:'🇪🇸'},
+  'Portugal': {code:'PT', flag:'🇵🇹'},
+  'Belgien': {code:'BE', flag:'🇧🇪'},
+  'Niederlande': {code:'NL', flag:'🇳🇱'},
+  'Luxemburg': {code:'LU', flag:'🇱🇺'},
+  'Vereinigtes Königreich': {code:'GB', flag:'🇬🇧'},
+  'Irland': {code:'IE', flag:'🇮🇪'},
+  'Tschechien': {code:'CZ', flag:'🇨🇿'},
+  'Slowakei': {code:'SK', flag:'🇸🇰'},
+  'Ungarn': {code:'HU', flag:'🇭🇺'},
+  'Polen': {code:'PL', flag:'🇵🇱'},
+  'Rumänien': {code:'RO', flag:'🇷🇴'},
+  'Bulgarien': {code:'BG', flag:'🇧🇬'},
+  'Griechenland': {code:'GR', flag:'🇬🇷'},
+  'Türkei': {code:'TR', flag:'🇹🇷'},
+  'Russland': {code:'RU', flag:'🇷🇺'},
+  'Schweden': {code:'SE', flag:'🇸🇪'},
+  'Norwegen': {code:'NO', flag:'🇳🇴'},
+  'Dänemark': {code:'DK', flag:'🇩🇰'},
+  'Finnland': {code:'FI', flag:'🇫🇮'},
+  'Estland': {code:'EE', flag:'🇪🇪'},
+  'Lettland': {code:'LV', flag:'🇱🇻'},
+  'Litauen': {code:'LT', flag:'🇱🇹'},
+  'Belarus': {code:'BY', flag:'🇧🇾'},
+  'Ukraine': {code:'UA', flag:'🇺🇦'},
+  'Slowenien': {code:'SI', flag:'🇸🇮'},
+  'Kroatien': {code:'HR', flag:'🇭🇷'},
+  'Serbien': {code:'RS', flag:'🇷🇸'},
+  'Bosnien und Herzegowina': {code:'BA', flag:'🇧🇦'},
+  'Montenegro': {code:'ME', flag:'🇲🇪'},
+  'Albanien': {code:'AL', flag:'🇦🇱'},
+  'Nordmazedonien': {code:'MK', flag:'🇲🇰'}
+};
+
+const ETS2_BRANDS = ['Mercedes','MAN','Scania','Volvo','DAF','Iveco','Renault','Iveco'];
+const ETS2_CARGOS = ['Lebensmittel','Baumaterial','Elektronik','Fahrzeuge','Maschinenbau','Kleidung','Chemikalien','Bauteile','Post','Getreide','Werkzeuge'];
+
+const ETS2_ROADS = [
+  {country:'Deutschland', flag:'🇩🇪', cities:[
+    {name:'Berlin', img:''},
+    {name:'Hamburg', img:''},
+    {name:'München', img:''}
+  ]},
+  {country:'Frankreich', flag:'🇫🇷', cities:[
+    {name:'Paris', img:''},
+    {name:'Lyon', img:''}
+  ]}
+];
+
+let ETS2_EXPLORE = [
+  {country:'Deutschland', flag:'🇩🇪', cities:['Berlin','Hamburg','München','Köln','Frankfurt','Stuttgart','Dortmund','Düsseldorf','Leipzig','Bremen','Hannover','Nürnberg','Essen','Duisburg','Bochum','Wuppertal','Bielefeld','Bonn','Mannheim','Karlsruhe']},
+  {country:'Österreich', flag:'🇦🇹', cities:['Wien','Graz','Linz','Salzburg','Innsbruck','Klagenfurt','Villach']},
+  {country:'Schweiz', flag:'🇨🇭', cities:['Zürich','Genf','Basel','Bern','Lausanne','Luzern','St. Gallen']},
+  {country:'Frankreich', flag:'🇫🇷', cities:['Paris','Lyon','Marseille','Toulouse','Bordeaux','Lille','Nantes','Nice','Strasbourg','Rennes','Reims']},
+  {country:'Italien', flag:'🇮🇹', cities:['Rom','Mailand','Venedig','Neapel','Turin','Bologna','Florenz','Genua']},
+  {country:'Spanien', flag:'🇪🇸', cities:['Madrid','Barcelona','Valencia','Sevilla','Bilbao','Zaragoza','Málaga']},
+  {country:'Portugal', flag:'🇵🇹', cities:['Lissabon','Porto','Coimbra']},
+  {country:'Belgien', flag:'🇧🇪', cities:['Brüssel','Antwerpen','Gent']},
+  {country:'Niederlande', flag:'🇳🇱', cities:['Amsterdam','Rotterdam','Den Haag','Utrecht']},
+  {country:'Luxemburg', flag:'🇱🇺', cities:['Luxembourg']},
+  {country:'Vereinigtes Königreich', flag:'🇬🇧', cities:['London','Birmingham','Manchester','Leeds','Glasgow','Edinburgh','Newcastle']},
+  {country:'Irland', flag:'🇮🇪', cities:['Dublin','Cork']},
+  {country:'Tschechien', flag:'🇨🇿', cities:['Prag','Brünn','Ostrava']},
+  {country:'Slowakei', flag:'🇸🇰', cities:['Bratislava','Košice']},
+  {country:'Ungarn', flag:'🇭🇺', cities:['Budapest','Debrecen']},
+  {country:'Polen', flag:'🇵🇱', cities:['Warschau','Krakau','Wrocław','Danzig','Poznań']},
+  {country:'Rumänien', flag:'🇷🇴', cities:['Bukarest','Cluj-Napoca','Timișoara']},
+  {country:'Bulgarien', flag:'🇧🇬', cities:['Sofia','Plovdiv','Varna']},
+  {country:'Griechenland', flag:'🇬🇷', cities:['Athen','Thessaloniki']},
+  {country:'Türkei', flag:'🇹🇷', cities:['Istanbul','Ankara','Izmir']},
+  {country:'Russland', flag:'🇷🇺', cities:['Moskau','St. Petersburg','Kazan']},
+  {country:'Schweden', flag:'🇸🇪', cities:['Stockholm','Göteborg','Malmö']},
+  {country:'Norwegen', flag:'🇳🇴', cities:['Oslo','Bergen','Trondheim']},
+  {country:'Dänemark', flag:'🇩🇰', cities:['Kopenhagen','Aarhus']},
+  {country:'Finnland', flag:'🇫🇮', cities:['Helsinki','Tampere']},
+  {country:'Estland', flag:'🇪🇪', cities:['Tallinn']},
+  {country:'Lettland', flag:'🇱🇻', cities:['Riga']},
+  {country:'Litauen', flag:'🇱🇹', cities:['Vilnius']},
+  {country:'Belarus', flag:'🇧🇾', cities:['Minsk']},
+  {country:'Ukraine', flag:'🇺🇦', cities:['Kyiv','Lviv','Odesa']},
+  {country:'Slowenien', flag:'🇸🇮', cities:['Ljubljana']},
+  {country:'Kroatien', flag:'🇭🇷', cities:['Zagreb','Split']},
+  {country:'Serbien', flag:'🇷🇸', cities:['Belgrad']},
+  {country:'Bosnien und Herzegowina', flag:'🇧🇦', cities:['Sarajevo']},
+  {country:'Montenegro', flag:'🇲🇪', cities:['Podgorica']},
+  {country:'Albanien', flag:'🇦🇱', cities:['Tirana']},
+  {country:'Nordmazedonien', flag:'🇲🇰', cities:['Skopje']}
+];
+
+let ETS2_COUNTRIES = [];
+let ETS2_CITY_LIST = [];
+function updateWorldLookup(){
+  ETS2_COUNTRIES = ETS2_EXPLORE.map(item => ({
+    code: ETS2_COUNTRY_META[item.country]?.code || item.country,
+    flag: ETS2_COUNTRY_META[item.country]?.flag || item.flag || '🏳️',
+    name: item.country
+  }));
+  ETS2_CITY_LIST = [...new Set(ETS2_EXPLORE.flatMap(item => item.cities))].sort((a,b)=>a.localeCompare(b,'de'));
+}
+updateWorldLookup();
+
+function getCountryCode(name){
+  return ETS2_COUNTRY_META[name]?.code || name;
+}
+function getCountryByCode(code){
+  return ETS2_EXPLORE.find(item => ETS2_COUNTRY_META[item.country]?.code === code || item.country === code);
+}
+function getCountryByName(name){
+  return ETS2_EXPLORE.find(item => item.country === name || ETS2_COUNTRY_META[item.country]?.code === name);
+}
+function getCountryNames(){
+  return ETS2_COUNTRIES.map(item => item.name);
+}
+function getCitiesForCountryCode(code){
+  const country = getCountryByCode(code);
+  return country ? country.cities : ETS2_CITY_LIST;
+}
+function getAcCities(input){
+  if(!input) return ETS2_CITY_LIST;
+  const id = input.id;
+  if(id === 'f-von') return getCitiesForCountryCode(document.getElementById('f-von-land')?.value);
+  if(id === 'f-nach') return getCitiesForCountryCode(document.getElementById('f-nach-land')?.value);
+  if(id === 't-stadt') return getCitiesForCountryCode(document.getElementById('t-land')?.value);
+  return ETS2_CITY_LIST;
+}
+function getAcCountries(){
+  return getCountryNames();
+}
+function generateId(prefix='item'){
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+}
+
+function reportNetworkError(e){ console.error('Netzwerkfehler', e); return 'Netzwerkfehler'; }
+async function parseApiResponse(res){
+  const text = await res.text();
+  const type = res.headers.get('content-type') || '';
+  if(type.includes('application/json')){
+    try{ return JSON.parse(text); }
+    catch(err){
+      console.error('Ungültige JSON-Antwort', text, err);
+      throw new Error(`Ungültige JSON-Antwort: ${text.slice(0,200)}`);
+    }
+  }
+  if(res.ok) return text;
+  throw new Error(`Serverfehler ${res.status} ${res.statusText}: ${text}`);
+}
+
+function getApiHeaders(additional={}){
+  const headers = {...additional};
+  const token = localStorage.getItem('ets2-token');
+  if(token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+async function handleSaveResponse(res, fallback='Fehler beim Speichern'){
+  if(res.ok) return true;
+  try{
+    const data = await parseApiResponse(res);
+    alert(data?.error || data?.message || data || fallback);
+  }catch(e){
+    const text = await res.text().catch(()=>null);
+    console.error('Save response parse failed', e, res.status, text);
+    alert(text || fallback);
+  }
+  return false;
+}
+function apiFetch(path, options={}){
+  return fetch(`${API_BASE}${path}`, {...options, headers: getApiHeaders(options.headers)});
+}
 
 // ── AUTH ──
 function switchAuthTab(tab,el){
@@ -15,10 +194,10 @@ async function doLogin(){
   const pass = document.getElementById('login-pass').value;
   if(!user || !pass){showAuthError('Benutzername und Passwort erforderlich');return;}
   try{
-    const res = await fetch(`${API_BASE}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user,pass})});
-    const data = await res.json();
-    if(res.ok){USER = data.user;showApp();}else{showAuthError(data.error);}
-  }catch(e){showAuthError('Netzwerkfehler');}
+    const res = await apiFetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})});
+    const data = await parseApiResponse(res);
+    if(res.ok){localStorage.setItem('ets2-token', data.token); USER = data.username || data.user; showApp();}else{showAuthError(data.error || data || 'Serverfehler');}
+  }catch(e){showAuthError(reportNetworkError(e));}
 }
 async function doRegister(){
   const user = document.getElementById('reg-user').value.trim();
@@ -28,10 +207,10 @@ async function doRegister(){
   if(pass.length<6){showAuthError('Passwort min. 6 Zeichen');return;}
   if(pass!==pass2){showAuthError('Passwörter stimmen nicht überein');return;}
   try{
-    const res = await fetch(`${API_BASE}/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user,pass})});
-    const data = await res.json();
-    if(res.ok){USER = data.user;showApp();}else{showAuthError(data.error);}
-  }catch(e){showAuthError('Netzwerkfehler');}
+    const res = await apiFetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})});
+    const data = await parseApiResponse(res);
+    if(res.ok){localStorage.setItem('ets2-token', data.token); USER = data.username || data.user; showApp();}else{showAuthError(data.error || data || 'Serverfehler');}
+  }catch(e){showAuthError(reportNetworkError(e));}
 }
 function showAuthError(msg){document.getElementById('auth-error').textContent=msg;}
 function doLogout(){
@@ -42,23 +221,78 @@ function doLogout(){
 }
 
 // ── APP ──
+async function loadMetadata(){
+  try{
+    const res = await apiFetch('/lookup/world');
+    if(res.ok){
+      const data = await parseApiResponse(res);
+      if(data && Array.isArray(data.explore)){
+        ETS2_EXPLORE = data.explore;
+        updateWorldLookup();
+      }
+    }
+  }catch(e){
+    console.warn('Meta-Daten nicht geladen', e);
+  }
+}
+
 async function showApp(){
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('username-display').textContent = USER;
   document.getElementById('settings-username').textContent = USER;
+  await loadMetadata();
   await loadData();
-  showTab('fahrtenbuch');
+  populateCountrySelects();
+  showTab('dashboard');
+}
+
+// populate country selects and wire dependent city autocomplete
+function populateCountrySelects(){
+  const countries = ETS2_COUNTRIES;
+  ['f-von-land','f-nach-land','t-land'].forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    // clear existing options except placeholder
+    const placeholder = sel.querySelector('option') ? sel.querySelector('option').outerHTML : '<option value="">– wählen –</option>';
+    sel.innerHTML = placeholder;
+    countries.forEach(c=>{
+      const opt = document.createElement('option'); opt.value = c.code; opt.textContent = `${c.flag} ${c.name}`; sel.appendChild(opt);
+    });
+    // when country changes, prefill corresponding city input if present
+    sel.addEventListener('change', e=>{
+      const cid = id==='f-von-land' ? 'f-von' : id==='f-nach-land' ? 'f-nach' : 't-stadt';
+      const input = document.getElementById(cid);
+      if(!input) return;
+      const country = e.target.value;
+      // if country selected, open autocomplete with its cities
+      if(country){
+        const countryData = getCountryByCode(country);
+        if(countryData){
+          // show suggestions directly by populating ac-list
+          const listId = input.nextElementSibling && input.nextElementSibling.classList && input.nextElementSibling.classList.contains('ac-list') ? input.nextElementSibling.id : null;
+          if(listId){
+            const ac = document.getElementById(listId);
+            ac.innerHTML = getCitiesForCountryCode(country).slice(0,12).map(ci=>`<div class="ac-item" onclick="acSelect('${ci}',this)">${ci}</div>`).join('');
+            ac.classList.add('open');
+          }
+        }
+      }else{
+        // close autocomplete
+        const acElem = input.nextElementSibling; if(acElem) acElem.classList.remove('open');
+      }
+    });
+  });
 }
 async function loadData(){
   try{
-    const res = await fetch(`${API_BASE}/data`);
+    const res = await apiFetch('/data');
     if(res.ok){
-      DATA = await res.json();
+      DATA = await parseApiResponse(res);
       renderAll();
       updateSyncStatus('success');
     }else{updateSyncStatus('error');}
-  }catch(e){updateSyncStatus('error');}
+  }catch(e){console.error('Netzwerkfehler', e); updateSyncStatus('error');}
 }
 function updateSyncStatus(status){
   const dot = document.getElementById('sync-dot');
@@ -73,12 +307,80 @@ function showTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   document.querySelector(`[onclick="showTab('${tab}',this)"]`).classList.add('active');
-  if(tab==='fahrtenbuch')renderFahrten();
+  if(tab==='dashboard')renderDashboard();
+  else if(tab==='fahrtenbuch')renderFahrten();
   else if(tab==='fuhrpark')renderTrucks();
   else if(tab==='fahrer')renderFahrer();
   else if(tab==='garagen')renderGaragen();
   else if(tab==='roads')renderRoads();
   else if(tab==='erkundung')renderExplore();
+  else if(tab==='settings')renderSettings();
+}
+
+function renderSettings(){
+  renderLookupSettings();
+}
+
+async function addLookupCity(){
+  const countryName = document.getElementById('settings-country-select').value;
+  const city = document.getElementById('settings-city-add').value.trim();
+  if(!countryName || !city){alert('Land und Stadt erforderlich');return;}
+  const country = getCountryByName(countryName);
+  if(!country){alert('Land nicht gefunden');return;}
+  if(country.cities.includes(city)){alert('Stadt existiert bereits');return;}
+  country.cities.push(city);
+  country.cities.sort((a,b)=>a.localeCompare(b,'de'));
+  updateWorldLookup();
+  await saveWorldLookup();
+  renderLookupSettings();
+  populateCountrySelects();
+  document.getElementById('settings-city-add').value = '';
+  alert('Stadt hinzugefügt');
+}
+
+async function addLookupCountry(){
+  const countryName = document.getElementById('settings-country-add').value.trim();
+  const countryCode = document.getElementById('settings-country-code').value.trim().toUpperCase();
+  if(!countryName){alert('Landname erforderlich');return;}
+  if(ETS2_EXPLORE.some(e=>e.country===countryName)){alert('Land existiert bereits');return;}
+  const flag = ETS2_COUNTRY_META[countryName]?.flag || '🏳️';
+  if(countryCode){ETS2_COUNTRY_META[countryName] = {code: countryCode, flag};}
+  ETS2_EXPLORE.push({country: countryName, flag, cities: []});
+  updateWorldLookup();
+  await saveWorldLookup();
+  renderLookupSettings();
+  populateCountrySelects();
+  document.getElementById('settings-country-add').value = '';
+  document.getElementById('settings-country-code').value = '';
+  alert('Land hinzugefügt');
+}
+
+function renderLookupSettings(){
+  const select = document.getElementById('settings-country-select');
+  if(!select) return;
+  const previous = select.value;
+  select.innerHTML = ETS2_COUNTRIES.map(c=>`<option value="${c.name}">${c.flag} ${c.name}</option>`).join('');
+  select.value = previous || ETS2_COUNTRIES[0]?.name || '';
+  if(!select.value && ETS2_COUNTRIES[0]) select.value = ETS2_COUNTRIES[0].name;
+  const country = getCountryByName(select.value);
+  const cities = country?.cities || [];
+  const container = document.getElementById('settings-country-cities');
+  if(container){
+    container.innerHTML = cities.length ? cities.map(c=>`<div>${c}</div>`).join('') : '<div style="color:var(--dim)">Keine Städte vorhanden.</div>';
+  }
+}
+
+async function saveWorldLookup(){
+  try{
+    const res = await apiFetch('/lookup/world',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({explore: ETS2_EXPLORE})});
+    if(!res.ok){
+      const data = await parseApiResponse(res);
+      alert(data.error||'Fehler beim Speichern der Lookup-Daten');
+    }
+  }catch(e){
+    console.error('Lookup speichern fehlgeschlagen', e);
+    alert('Netzwerkfehler beim Speichern der Lookup-Daten');
+  }
 }
 
 // ── FAHRTENBUCH ──
@@ -89,7 +391,7 @@ function renderFahrten(search=''){
   let fahrten = DATA.fahrten.filter(f=>{
     if(search && !(`${f.von} ${f.nach} ${f.fracht} ${f.kz}`.toLowerCase().includes(search.toLowerCase())))return false;
     if(filterKz && f.kz!==filterKz)return false;
-    if(filterLand && f['von-land']!==filterLand && f['nach-land']!==filterLand)return false;
+    if(filterLand && getCountryCode(f['von-land'])!==filterLand && getCountryCode(f['nach-land'])!==filterLand)return false;
     return true;
   });
   fahrten.sort((a,b)=>new Date(b.datum)-new Date(a.datum));
@@ -108,8 +410,8 @@ function renderFahrten(search=''){
       <td class="td-num">${f.netto||0}</td>
       <td class="td-num">${f['euro-km']?f['euro-km'].toFixed(2):0}</td>
       <td><div class="action-btns">
-        <button class="icon-btn" onclick="editFahrt(${f.id})">✏️</button>
-        <button class="icon-btn del" onclick="deleteFahrt(${f.id})">🗑️</button>
+        <button class="icon-btn" onclick="editFahrt('${String(f.id).replace(/'/g,'\\\'')}')">✏️</button>
+        <button class="icon-btn del" onclick="deleteFahrt('${String(f.id).replace(/'/g,'\\\'')}')">🗑️</button>
       </div></td>
     </tr>
   `).join('');
@@ -131,24 +433,31 @@ function updateFahrtStats(){
 }
 function updateFilterOptions(){
   const kzSet = new Set(DATA.fahrten.map(f=>f.kz).filter(Boolean));
-  const landSet = new Set([...DATA.fahrten.map(f=>f['von-land']),...DATA.fahrten.map(f=>f['nach-land'])].filter(Boolean));
+  const landSet = new Set([...DATA.fahrten.map(f=>getCountryCode(f['von-land'])),...DATA.fahrten.map(f=>getCountryCode(f['nach-land']) )].filter(Boolean));
   document.getElementById('filter-kz').innerHTML = '<option value="">Alle</option>' + [...kzSet].sort().map(k=>`<option value="${k}">${k}</option>`).join('');
-  document.getElementById('filter-land').innerHTML = '<option value="">Alle</option>' + [...landSet].sort().map(l=>`<option value="${l}">${l}</option>`).join('');
+  document.getElementById('filter-land').innerHTML = '<option value="">Alle</option>' + [...landSet].sort().map(l=>{
+      const country = getCountryByCode(l);
+      return `<option value="${l}">${country?.country||l}</option>`;
+    }).join('');
 }
 function openFahrtForm(id=null){
   const modal = document.getElementById('fahrt-modal');
   const title = document.getElementById('fahrt-modal-title');
   const fahrt = id ? DATA.fahrten.find(f=>f.id===id) : null;
   title.textContent = fahrt ? 'Fahrt bearbeiten' : 'Neue Fahrt';
+  modal.dataset.editId = fahrt?.id || '';
   // Reset form
   document.getElementById('f-datum').value = fahrt?.datum || new Date().toISOString().split('T')[0];
   document.getElementById('f-kz').value = fahrt?.kz || '';
   document.getElementById('f-fahrer').value = fahrt?.fahrer || '';
+  document.getElementById('f-start-km').value = fahrt?.['start-km'] || '';
+  document.getElementById('f-end-km').value = fahrt?.['end-km'] || '';
   document.getElementById('f-km').value = fahrt?.km || '';
   document.getElementById('f-von').value = fahrt?.von || '';
   document.getElementById('f-nach').value = fahrt?.nach || '';
-  document.getElementById('f-von-land').innerHTML = '<option value="">– wählen –</option>' + ETS2_LANDS.map(l=>`<option value="${l.code}" ${fahrt?.['von-land']===l.code?'selected':''}>${l.flag} ${l.name}</option>`).join('');
-  document.getElementById('f-nach-land').innerHTML = '<option value="">– wählen –</option>' + ETS2_LANDS.map(l=>`<option value="${l.code}" ${fahrt?.['nach-land']===l.code?'selected':''}>${l.flag} ${l.name}</option>`).join('');
+  document.getElementById('f-von-land').innerHTML = '<option value="">– wählen –</option>' + ETS2_COUNTRIES.map(l=>`<option value="${l.code}" ${getCountryCode(fahrt?.['von-land'])===l.code?'selected':''}>${l.flag} ${l.name}</option>`).join('');
+  document.getElementById('f-nach-land').innerHTML = '<option value="">– wählen –</option>' + ETS2_COUNTRIES.map(l=>`<option value="${l.code}" ${getCountryCode(fahrt?.['nach-land'])===l.code?'selected':''}>${l.flag} ${l.name}</option>`).join('');
+  document.getElementById('f-accept-km').checked = Boolean(fahrt?.['accept-km']);
   document.getElementById('f-fracht').value = fahrt?.fracht || '';
   document.getElementById('f-gewicht').value = fahrt?.gewicht || '';
   document.getElementById('f-zahlung').value = fahrt?.zahlung || '';
@@ -171,21 +480,45 @@ function openFahrtForm(id=null){
 function addCostEntry(container,type,data=null){
   const div = document.getElementById(container);
   const id = Date.now();
-  div.insertAdjacentHTML('beforeend',`
-    <div class="cost-entry" data-id="${id}">
-      <input class="form-input" type="text" placeholder="Beschreibung" value="${data?.desc||''}" onchange="calcFahrtNet()">
-      <span>€</span>
-      <input class="form-input" type="number" step="0.01" placeholder="0.00" value="${data?.cost||''}" onchange="calcFahrtNet()">
-      <button class="remove-cost" onclick="this.parentElement.remove();calcFahrtNet()">✕</button>
-    </div>
-  `);
+  if(type==='diesel'){
+    div.insertAdjacentHTML('beforeend',`
+      <div class="cost-entry" data-id="${id}" data-type="diesel">
+        <input class="form-input" type="text" placeholder="Beschreibung" value="${data?.desc||''}" onchange="calcFahrtNet()">
+        <input class="form-input" type="number" step="0.01" min="0" placeholder="Liter" value="${data?.liters||''}" oninput="calcFahrtNet()">
+        <input class="form-input" type="number" step="0.01" min="0" placeholder="€/Liter" value="${data?.price_per_liter||''}" oninput="calcFahrtNet()">
+        <input class="form-input" type="number" step="0.01" min="0" placeholder="Betrag" value="${data?.cost?.toFixed ? data.cost.toFixed(2) : data?.cost||''}" readonly>
+        <button class="remove-cost" onclick="this.parentElement.remove();calcFahrtNet()">✕</button>
+      </div>
+    `);
+  } else {
+    div.insertAdjacentHTML('beforeend',`
+      <div class="cost-entry" data-id="${id}" data-type="${type}">
+        <input class="form-input" type="text" placeholder="Beschreibung" value="${data?.desc||''}" onchange="calcFahrtNet()">
+        <span>€</span>
+        <input class="form-input" type="number" step="0.01" min="0" placeholder="0.00" value="${data?.cost||''}" oninput="calcFahrtNet()">
+        <button class="remove-cost" onclick="this.parentElement.remove();calcFahrtNet()">✕</button>
+      </div>
+    `);
+  }
 }
 function calcFahrtNet(){
+  syncFahrtKmFields();
   const km = parseFloat(document.getElementById('f-km').value)||0;
   const zahlung = parseFloat(document.getElementById('f-zahlung').value)||0;
   const bonus = parseFloat(document.getElementById('f-bonus').value)||0;
   let kosten = 0;
-  document.querySelectorAll('.cost-entry input[type="number"]').forEach(inp=>kosten += parseFloat(inp.value)||0);
+  document.querySelectorAll('#diesel-entries .cost-entry').forEach(entry=>{
+    const liters = parseFloat(entry.querySelector('input[type="number"]')?.value)||0;
+    const price = parseFloat(entry.querySelectorAll('input[type="number"]')[1]?.value)||0;
+    const amount = liters * price;
+    const amountInput = entry.querySelector('input[readonly]');
+    if(amountInput) amountInput.value = amount.toFixed(2);
+    kosten += amount;
+  });
+  document.querySelectorAll('#maut-entries .cost-entry,#sonst-entries .cost-entry').forEach(entry=>{
+    const costInput = entry.querySelector('input[type="number"]');
+    kosten += parseFloat(costInput?.value)||0;
+  });
   const netto = zahlung + bonus - kosten;
   const euroKm = km ? netto / km : 0;
   document.getElementById('f-kosten-total').value = kosten.toFixed(2);
@@ -193,15 +526,24 @@ function calcFahrtNet(){
   document.getElementById('f-euro-km').value = euroKm.toFixed(2);
 }
 async function saveFahrt(){
+  const modal = document.getElementById('fahrt-modal');
+  const startKm = parseFloat(document.getElementById('f-start-km').value);
+  const endKm = parseFloat(document.getElementById('f-end-km').value);
+  const distKm = parseFloat(document.getElementById('f-km').value);
+  const km = Number.isFinite(distKm) ? distKm : 0;
   const fahrt = {
+    id: modal.dataset.editId || generateId('fahrt'),
     datum: document.getElementById('f-datum').value,
     kz: document.getElementById('f-kz').value.trim(),
     fahrer: document.getElementById('f-fahrer').value.trim(),
-    km: parseFloat(document.getElementById('f-km').value)||0,
+    'start-km': Number.isFinite(startKm) ? startKm : undefined,
+    'end-km': Number.isFinite(endKm) ? endKm : undefined,
+    km,
     von: document.getElementById('f-von').value.trim(),
     nach: document.getElementById('f-nach').value.trim(),
     'von-land': document.getElementById('f-von-land').value,
     'nach-land': document.getElementById('f-nach-land').value,
+    'accept-km': document.getElementById('f-accept-km').checked,
     fracht: document.getElementById('f-fracht').value.trim(),
     gewicht: document.getElementById('f-gewicht').value.trim(),
     zahlung: parseFloat(document.getElementById('f-zahlung').value)||0,
@@ -215,40 +557,64 @@ async function saveFahrt(){
   // Collect costs
   document.querySelectorAll('#diesel-entries .cost-entry').forEach(e=>{
     const desc = e.querySelector('input[type="text"]').value.trim();
-    const cost = parseFloat(e.querySelector('input[type="number"]').value)||0;
-    if(desc || cost)fahrt.kosten_details.push({type:'diesel',desc,cost});
+    const liters = parseFloat(e.querySelectorAll('input[type="number"]')[0]?.value)||0;
+    const price_per_liter = parseFloat(e.querySelectorAll('input[type="number"]')[1]?.value)||0;
+    const cost = parseFloat(e.querySelector('input[readonly]')?.value)||0;
+    if(desc || liters || price_per_liter || cost)fahrt.kosten_details.push({type:'diesel',desc,liters,price_per_liter,cost});
   });
   document.querySelectorAll('#maut-entries .cost-entry').forEach(e=>{
     const desc = e.querySelector('input[type="text"]').value.trim();
-    const cost = parseFloat(e.querySelector('input[type="number"]').value)||0;
+    const cost = parseFloat(e.querySelector('input[type="number"]')?.value)||0;
     if(desc || cost)fahrt.kosten_details.push({type:'maut',desc,cost});
   });
   document.querySelectorAll('#sonst-entries .cost-entry').forEach(e=>{
     const desc = e.querySelector('input[type="text"]').value.trim();
-    const cost = parseFloat(e.querySelector('input[type="number"]').value)||0;
+    const cost = parseFloat(e.querySelector('input[type="number"]')?.value)||0;
     if(desc || cost)fahrt.kosten_details.push({type:'sonst',desc,cost});
   });
   try{
+    if(fahrt['accept-km'] && Number.isFinite(fahrt['end-km']) && fahrt.kz){
+      const truck = DATA.trucks.find(t=>t.kz===fahrt.kz);
+      if(truck){
+        truck.km = fahrt['end-km'];
+        await apiFetch(`/trucks/${encodeURIComponent(truck.kz)}`,{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(truck)
+        });
+      }
+    }
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/fahrten${fahrt.id?'/'+fahrt.id:''}`,{
-      method:fahrt.id?'PUT':'POST',
+    const exploreUpdated = markFahrtCitiesExplored(fahrt);
+    updateSyncStatus('syncing');
+    const isNew = !modal.dataset.editId;
+    const endpoint = isNew ? '/fahrten' : `/fahrten/${encodeURIComponent(fahrt.id)}`;
+    const res = await apiFetch(endpoint,{
+      method: isNew ? 'POST' : 'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(fahrt)
     });
-    if(res.ok){
+    if(await handleSaveResponse(res)){
+      let exploreSaved = true;
+      if(exploreUpdated){
+        exploreSaved = await saveExploreData();
+      }
       await loadData();
       closeModal('fahrt-modal');
-    }else{alert('Fehler beim Speichern');}
-  }catch(e){alert('Netzwerkfehler');}
+      if(!exploreSaved){
+        alert('Fahrt gespeichert, aber die Erkundungsdaten konnten nicht gespeichert werden.');
+      }
+    }
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 async function deleteFahrt(id){
   if(!confirm('Fahrt wirklich löschen?'))return;
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/fahrten/${id}`,{method:'DELETE'});
+    const res = await apiFetch(`/fahrten/${id}`,{method:'DELETE'});
     if(res.ok)await loadData();
     else alert('Fehler beim Löschen');
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 function editFahrt(id){openFahrtForm(id);}
 
@@ -279,17 +645,19 @@ function openTruckForm(kz=null){
   const title = document.getElementById('truck-modal-title');
   const truck = kz ? DATA.trucks.find(t=>t.kz===kz) : null;
   title.textContent = truck ? 'Fahrzeug bearbeiten' : 'Neues Fahrzeug';
+  modal.dataset.editId = truck?.kz || '';
   document.getElementById('t-kz').value = truck?.kz || '';
   document.getElementById('t-marke').innerHTML = '<option value="">– wählen –</option>' + ETS2_BRANDS.map(b=>`<option value="${b}" ${truck?.marke===b?'selected':''}>${b}</option>`).join('');
   document.getElementById('t-modell').value = truck?.modell || '';
   document.getElementById('t-leistung').value = truck?.leistung || '';
   document.getElementById('t-km').value = truck?.km || '';
   document.getElementById('t-fracht').value = truck?.fracht || '';
-  document.getElementById('t-land').innerHTML = '<option value="">– wählen –</option>' + ETS2_LANDS.map(l=>`<option value="${l.code}" ${truck?.land===l.code?'selected':''}>${l.flag} ${l.name}</option>`).join('');
+  document.getElementById('t-land').innerHTML = '<option value="">– wählen –</option>' + ETS2_COUNTRIES.map(l=>`<option value="${l.code}" ${truck?.land===l.code?'selected':''}>${l.flag} ${l.name}</option>`).join('');
   document.getElementById('t-stadt').value = truck?.stadt || '';
   modal.classList.add('open');
 }
 async function saveTruck(){
+  const modal = document.getElementById('truck-modal');
   const truck = {
     kz: document.getElementById('t-kz').value.trim(),
     marke: document.getElementById('t-marke').value,
@@ -301,27 +669,30 @@ async function saveTruck(){
     stadt: document.getElementById('t-stadt').value.trim()
   };
   if(!truck.kz){alert('Kennzeichen erforderlich');return;}
+  const truckId = modal.dataset.editId || truck.kz;
+  const isNew = !modal.dataset.editId;
+  if(isNew){truck.id = truckId;}
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/trucks${truck.id?'/'+truck.id:''}`,{
-      method:truck.id?'PUT':'POST',
+    const res = await apiFetch(isNew ? '/trucks' : `/trucks/${encodeURIComponent(truckId)}`,{ 
+      method: isNew ? 'POST' : 'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(truck)
     });
-    if(res.ok){
+    if(await handleSaveResponse(res)){
       await loadData();
       closeModal('truck-modal');
-    }else{alert('Fehler beim Speichern');}
-  }catch(e){alert('Netzwerkfehler');}
+    }
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 async function deleteTruck(kz){
   if(!confirm('Fahrzeug wirklich löschen?'))return;
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/trucks/${encodeURIComponent(kz)}`,{method:'DELETE'});
+    const res = await apiFetch(`/trucks/${encodeURIComponent(kz)}`,{method:'DELETE'});
     if(res.ok)await loadData();
     else alert('Fehler beim Löschen');
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 function editTruck(kz){openTruckForm(kz);}
 
@@ -348,6 +719,7 @@ function renderFahrer(){
 function openFahrerForm(nr=null){
   const modal = document.getElementById('fahrer-modal');
   const fahrer = nr ? DATA.fahrer.find(f=>f.nummer===nr) : null;
+  modal.dataset.editId = fahrer?.nummer || '';
   document.getElementById('dr-nr').value = fahrer?.nummer || '';
   document.getElementById('dr-name').value = fahrer?.name || '';
   document.getElementById('dr-kz').value = fahrer?.kz || '';
@@ -357,6 +729,7 @@ function openFahrerForm(nr=null){
   modal.classList.add('open');
 }
 async function saveFahrer(){
+  const modal = document.getElementById('fahrer-modal');
   const fahrer = {
     nummer: parseInt(document.getElementById('dr-nr').value)||0,
     name: document.getElementById('dr-name').value.trim(),
@@ -366,27 +739,30 @@ async function saveFahrer(){
     prod: parseFloat(document.getElementById('dr-prod').value)||0
   };
   if(!fahrer.nummer || !fahrer.name){alert('Nummer und Name erforderlich');return;}
+  const fahrerId = modal.dataset.editId || fahrer.nummer;
+  const isNew = !modal.dataset.editId;
+  if(isNew){fahrer.id = fahrerId;}
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/fahrer${fahrer.id?'/'+fahrer.id:''}`,{
-      method:fahrer.id?'PUT':'POST',
+    const res = await apiFetch(isNew ? '/fahrer' : `/fahrer/${encodeURIComponent(fahrerId)}`,{ 
+      method: isNew ? 'POST' : 'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(fahrer)
     });
-    if(res.ok){
+    if(await handleSaveResponse(res)){
       await loadData();
       closeModal('fahrer-modal');
-    }else{alert('Fehler beim Speichern');}
-  }catch(e){alert('Netzwerkfehler');}
+    }
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 async function deleteFahrer(nr){
   if(!confirm('Fahrer wirklich löschen?'))return;
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/fahrer/${nr}`,{method:'DELETE'});
+    const res = await apiFetch(`/fahrer/${nr}`,{method:'DELETE'});
     if(res.ok)await loadData();
     else alert('Fehler beim Löschen');
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 function editFahrer(nr){openFahrerForm(nr);}
 
@@ -426,6 +802,7 @@ function updateGarageStats(){
 function openGarageForm(name=null){
   const modal = document.getElementById('garage-modal');
   const garage = name ? DATA.garagen.find(g=>g.name===name) : null;
+  modal.dataset.editId = garage?.name || '';
   document.getElementById('g-name').value = garage?.name || '';
   document.getElementById('g-plaetze').value = garage?.plaetze || '';
   document.getElementById('g-fahrer').value = garage?.fahrer || '';
@@ -442,6 +819,7 @@ function calcGarage(){
   document.getElementById('g-tag').value = tag.toFixed(2);
 }
 async function saveGarage(){
+  const modal = document.getElementById('garage-modal');
   const garage = {
     name: document.getElementById('g-name').value.trim(),
     plaetze: parseInt(document.getElementById('g-plaetze').value)||0,
@@ -451,27 +829,30 @@ async function saveGarage(){
     tag: parseFloat(document.getElementById('g-tag').value)||0
   };
   if(!garage.name){alert('Name erforderlich');return;}
+  const garageId = modal.dataset.editId || garage.name;
+  const isNew = !modal.dataset.editId;
+  if(isNew){garage.id = garageId;}
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/garagen${garage.id?'/'+garage.id:''}`,{
-      method:garage.id?'PUT':'POST',
+    const res = await apiFetch(isNew ? '/garagen' : `/garagen/${encodeURIComponent(garageId)}`,{ 
+      method: isNew ? 'POST' : 'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(garage)
     });
-    if(res.ok){
+    if(await handleSaveResponse(res)){
       await loadData();
       closeModal('garage-modal');
-    }else{alert('Fehler beim Speichern');}
-  }catch(e){alert('Netzwerkfehler');}
+    }
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 async function deleteGarage(name){
   if(!confirm('Garage wirklich löschen?'))return;
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/garagen/${encodeURIComponent(name)}`,{method:'DELETE'});
+    const res = await apiFetch(`/garagen/${encodeURIComponent(name)}`,{method:'DELETE'});
     if(res.ok)await loadData();
     else alert('Fehler beim Löschen');
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 function editGarage(name){openGarageForm(name);}
 
@@ -536,28 +917,28 @@ async function toggleCity(country,city){
   if(DATA.roads[country].length===0)delete DATA.roads[country];
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/roads`,{
+    const res = await apiFetch('/roads',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(DATA.roads)
     });
     if(res.ok)renderRoads();
     else alert('Fehler beim Speichern');
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 async function resetRoads(){
   if(!confirm('Alle Secret Roads zurücksetzen?'))return;
   DATA.roads = {};
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/roads`,{
+    const res = await apiFetch('/roads',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(DATA.roads)
     });
     if(res.ok)renderRoads();
     else alert('Fehler beim Zurücksetzen');
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 
 // ── ERKUNDUNG ──
@@ -585,17 +966,22 @@ function renderExplore(){
   document.getElementById('e-total').textContent = total;
 }
 async function toggleExplore(country){
-  DATA.explore[country] = DATA.explore[country] ? null : ETS2_EXPLORE.find(e=>e.country===country).cities;
+  const exploreItem = ETS2_EXPLORE.find(e=>e.country===country);
+  if(!exploreItem){
+    console.error('Explore data not found for', country);
+    return;
+  }
+  DATA.explore[country] = DATA.explore[country] ? null : exploreItem.cities;
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/explore`,{
+    const res = await apiFetch('/explore',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(DATA.explore)
     });
     if(res.ok)renderExplore();
     else alert('Fehler beim Speichern');
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 async function toggleExploreCity(country,city){
   if(!DATA.explore[country])DATA.explore[country] = [];
@@ -605,14 +991,14 @@ async function toggleExploreCity(country,city){
   if(DATA.explore[country].length===0)delete DATA.explore[country];
   try{
     updateSyncStatus('syncing');
-    const res = await fetch(`${API_BASE}/explore`,{
+    const res = await apiFetch('/explore',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(DATA.explore)
     });
     if(res.ok)renderExplore();
     else alert('Fehler beim Speichern');
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 
 // ── SETTINGS ──
@@ -634,7 +1020,7 @@ function importData(input){
     try{
       const data = JSON.parse(e.target.result);
       updateSyncStatus('syncing');
-      const res = await fetch(`${API_BASE}/import`,{
+      const res = await apiFetch('/import',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(data)
@@ -655,29 +1041,29 @@ async function changePassword(){
   if(newp.length<6){document.getElementById('pw-error').textContent='Neues Passwort min. 6 Zeichen';return;}
   if(newp!==newp2){document.getElementById('pw-error').textContent='Passwörter stimmen nicht überein';return;}
   try{
-    const res = await fetch(`${API_BASE}/auth/password`,{
+    const res = await apiFetch('/change-password',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({old,new:newp})
+      body:JSON.stringify({oldPassword:old,newPassword:newp})
     });
-    const data = await res.json();
+    const data = await parseApiResponse(res);
     if(res.ok){
       closeModal('pw-modal');
       alert('Passwort geändert');
-    }else{document.getElementById('pw-error').textContent=data.error;}
-  }catch(e){document.getElementById('pw-error').textContent='Netzwerkfehler';}
+    }else{document.getElementById('pw-error').textContent=data.error || data || 'Serverfehler';}
+  }catch(e){console.error('Netzwerkfehler', e); document.getElementById('pw-error').textContent='Netzwerkfehler';}
 }
 async function clearAllData(){
   if(!confirm('Wirklich ALLE Daten löschen? Dies kann nicht rückgängig gemacht werden!'))return;
   if(!confirm('Sicher? Alle Fahrten, Fahrzeuge, Fahrer, Garagen und Erkundungen werden gelöscht!'))return;
   try{
-    const res = await fetch(`${API_BASE}/clear`,{method:'POST'});
+    const res = await apiFetch('/clear',{method:'POST'});
     if(res.ok){
       DATA = {fahrten:[],trucks:[],fahrer:[],garagen:[],roads:{},explore:{}};
       renderAll();
       alert('Alle Daten gelöscht');
     }else{alert('Fehler beim Löschen');}
-  }catch(e){alert('Netzwerkfehler');}
+  }catch(e){console.error('Netzwerkfehler', e); alert('Netzwerkfehler');}
 }
 
 // ── MODALS ──
@@ -692,10 +1078,11 @@ function closeImg(){document.getElementById('img-modal').style.display = 'none';
 function acInput(input,listId,getData){
   const val = input.value.toLowerCase();
   const list = document.getElementById(listId);
-  if(!val){list.classList.remove('open');return;}
-  const data = getData();
-  const matches = data.filter(d=>d.toLowerCase().includes(val)).slice(0,10);
-  list.innerHTML = matches.map(m=>`<div class="ac-item" onclick="acSelect('${m}',this)">${m}</div>`).join('');
+  const data = typeof getData === 'function' ? getData(input) : [];
+  if(!Array.isArray(data) || !data.length){list.classList.remove('open');return;}
+  const matches = val ? data.filter(d=>String(d).toLowerCase().includes(val)) : data.slice(0,10);
+  if(!matches.length){list.classList.remove('open');return;}
+  list.innerHTML = matches.slice(0,10).map(m=>`<div class="ac-item" onclick="acSelect('${m}',this)">${m}</div>`).join('');
   list.classList.add('open');
 }
 function acSelect(val,el){
@@ -703,7 +1090,140 @@ function acSelect(val,el){
   el.closest('.ac-list').classList.remove('open');
 }
 
+function ensureExploreCity(countryCodeOrName, city){
+  if(!countryCodeOrName || !city) return false;
+  const country = getCountryByCode(countryCodeOrName) || getCountryByName(countryCodeOrName);
+  if(!country) return false;
+  const key = country.country;
+  if(!DATA.explore[key]) DATA.explore[key] = [];
+  if(!DATA.explore[key].includes(city)){
+    DATA.explore[key].push(city);
+    return true;
+  }
+  return false;
+}
+
+async function saveExploreData(){
+  try{
+    const res = await apiFetch('/explore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(DATA.explore)});
+    if(!res.ok){
+      const data = await parseApiResponse(res);
+      alert(data.error||'Fehler beim Speichern der Erkundungen');
+      return false;
+    }
+    return true;
+  }catch(e){
+    console.error('Erkundungsdaten speichern fehlgeschlagen', e);
+    alert('Netzwerkfehler beim Speichern der Erkundungen');
+    return false;
+  }
+}
+
+function markFahrtCitiesExplored(fahrt){
+  let updated = false;
+  updated = ensureExploreCity(fahrt['von-land'], fahrt.von) || updated;
+  updated = ensureExploreCity(fahrt['nach-land'], fahrt.nach) || updated;
+  return updated;
+}
+
+function syncFahrtKmFields(){
+  const startInput = document.getElementById('f-start-km');
+  const endInput = document.getElementById('f-end-km');
+  const kmInput = document.getElementById('f-km');
+  const startFilled = startInput.value.trim() !== '';
+  const endFilled = endInput.value.trim() !== '';
+  const kmFilled = kmInput.value.trim() !== '';
+  const start = parseFloat(startInput.value);
+  const end = parseFloat(endInput.value);
+  const km = parseFloat(kmInput.value);
+  if(startFilled && endFilled && !isNaN(start) && !isNaN(end)){
+    kmInput.value = (end - start).toFixed(0);
+  } else if(startFilled && kmFilled && !endFilled && !isNaN(start) && !isNaN(km)){
+    endInput.value = (start + km).toFixed(0);
+  } else if(endFilled && kmFilled && !startFilled && !isNaN(end) && !isNaN(km)){
+    startInput.value = (end - km).toFixed(0);
+  }
+  applyKmStandIfChecked();
+}
+
+function applyKmStandIfChecked(){
+  const checkbox = document.getElementById('f-accept-km');
+  if(!checkbox?.checked) return;
+  const plate = document.getElementById('f-kz').value.trim();
+  const startInput = document.getElementById('f-start-km');
+  if(startInput.value.trim() !== '') return;
+  const truck = DATA.trucks.find(t=>t.kz===plate);
+  if(truck && Number.isFinite(parseFloat(truck.km))){
+    startInput.value = truck.km;
+  }
+}
+
 // ── HELPERS ──
+function renderDashboard(){
+  const totalFahrten = DATA.fahrten.length;
+  const totalTrucks = DATA.trucks.length;
+  const totalFahrer = DATA.fahrer.length;
+  const totalGaragen = DATA.garagen.length;
+  const totalKm = DATA.fahrten.reduce((sum,f)=>sum+(parseFloat(f.km)||0),0);
+  const totalBrutto = DATA.fahrten.reduce((sum,f)=>sum+(parseFloat(f.zahlung)||0),0);
+  const totalKosten = DATA.fahrten.reduce((sum,f)=>sum+(parseFloat(f.kosten)||0),0);
+  const totalNetto = DATA.fahrten.reduce((sum,f)=>sum+(parseFloat(f.netto)||0),0);
+  const totalDiesel = DATA.fahrten.reduce((sum,f)=>{
+    if(!Array.isArray(f.kosten_details))return sum;
+    return sum + f.kosten_details.filter(c=>c.type==='diesel').reduce((sub,c)=>sub+(parseFloat(c.liters)||0),0);
+  },0);
+  const totalCities = ETS2_EXPLORE.reduce((sum,e)=>sum+e.cities.length,0);
+  const visitedCountryKeys = Object.keys(DATA.explore||{}).filter(c=>Array.isArray(DATA.explore[c])&&DATA.explore[c].length>0);
+  const visitedCountries = visitedCountryKeys.length;
+  const visitedCities = visitedCountryKeys.reduce((sum,c)=>sum+(DATA.explore[c]?.length||0),0);
+  const stats = [
+    {label:'Fahrten', value:totalFahrten},
+    {label:'Trucks', value:totalTrucks},
+    {label:'Fahrer', value:totalFahrer},
+    {label:'Garagen', value:totalGaragen},
+    {label:'Km gesamt', value:totalKm.toLocaleString()},
+    {label:'Netto', value:totalNetto.toFixed(2)+' €'},
+    {label:'Kosten', value:totalKosten.toFixed(2)+' €'},
+    {label:'Diesel (L)', value:totalDiesel.toFixed(1)},
+    {label:'Erkundung', value:`${visitedCities}/${totalCities} (${totalCities?Math.round(visitedCities/totalCities*100):0}%)`}
+  ];
+  document.getElementById('dashboard-stats').innerHTML = stats.map(s=>`
+    <div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.value}</div></div>
+  `).join('');
+
+  const driverCounts = DATA.fahrten.reduce((map,f)=>{
+    if(f.fahrer){map[f.fahrer]=(map[f.fahrer]||0)+1;} return map;
+  },{});
+  const topDrivers = Object.entries(driverCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('dashboard-top-fahrer').innerHTML = topDrivers.length ?
+    `<ol>${topDrivers.map(([name,count])=>`<li>${name}: ${count} Fahrten</li>`).join('')}</ol>` : '<div class="stat-sub">Noch keine Fahrerdaten.</div>';
+
+  const countryCounts = DATA.fahrten.reduce((map,f)=>{
+    ['von-land','nach-land'].forEach(key=>{
+      if(f[key]) map[f[key]]=(map[f[key]]||0)+1;
+    });
+    return map;
+  },{});
+  const topCountries = Object.entries(countryCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('dashboard-top-laender').innerHTML = topCountries.length ?
+    `<ol>${topCountries.map(([code,count])=>{
+      const land = getCountryByCode(code);
+      return `<li>${land?land.country:code}: ${count}</li>`;
+    }).join('')}</ol>` : '<div class="stat-sub">Noch keine Länderdaten.</div>';
+
+  const recent = DATA.fahrten.slice(-5).reverse();
+  document.getElementById('dashboard-recent').innerHTML = recent.length ?
+    `<ol>${recent.map(f=>`<li><strong>${formatDate(f.datum)}</strong> ${f.von} → ${f.nach} (${f.km} km)</li>`).join('')}</ol>` : '<div class="stat-sub">Keine letzten Fahrten vorhanden.</div>';
+
+  document.getElementById('dashboard-explore').innerHTML = `
+    <div class="stat-sub">${visitedCountries}/${ETS2_EXPLORE.length} Länder besucht</div>
+    <div style="margin-top:10px;display:grid;gap:6px">${ETS2_EXPLORE.slice(0,5).map(e=>{
+      const visited = DATA.explore[e.country]?.length||0;
+      return `<div style="display:flex;justify-content:space-between;font-size:.88rem"><span>${e.country}</span><span>${visited}/${e.cities.length}</span></div>`;
+    }).join('')}</div>
+  `;
+}
+
 function renderAll(){
   renderFahrten();
   renderTrucks();
@@ -711,6 +1231,7 @@ function renderAll(){
   renderGaragen();
   renderRoads();
   renderExplore();
+  renderDashboard();
 }
 function formatDate(d){return new Date(d).toLocaleDateString('de-DE');}
 function getTruckPlates(){return DATA.trucks.map(t=>t.kz);}
@@ -722,7 +1243,7 @@ window.onload = ()=>{
   const token = localStorage.getItem('ets2-token');
   if(token){
     // Auto-login if token exists
-    fetch(`${API_BASE}/auth/me`,{headers:{Authorization:`Bearer ${token}`}})
+    apiFetch('/me')
     .then(res=>res.ok?res.json():null)
     .then(user=>{if(user){USER=user;showApp();}})
     .catch(()=>{});

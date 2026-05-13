@@ -66,7 +66,32 @@ db.exec(`
     data        TEXT    NOT NULL DEFAULT '{}',
     updated_at  TEXT    DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS lookup (
+    key         TEXT    PRIMARY KEY,
+    data        TEXT    NOT NULL
+  );
 `);
+
+const WORLD_LOOKUP_FILE = path.join(__dirname, 'lookup', 'world.json');
+
+function loadDefaultWorldLookup(){
+  try {
+    return JSON.parse(fs.readFileSync(WORLD_LOOKUP_FILE, 'utf8'));
+  } catch (err) {
+    console.error('Unable to load default world lookup file:', WORLD_LOOKUP_FILE, err);
+    return { explore: [] };
+  }
+}
+
+function ensureLookup(key, data){
+  const existing = db.prepare('SELECT key FROM lookup WHERE key = ?').get(key);
+  if(!existing){
+    db.prepare('INSERT INTO lookup (key, data) VALUES (?, ?)').run(key, JSON.stringify(data));
+  }
+}
+
+ensureLookup('world', loadDefaultWorldLookup());
 
 // ── middleware ────────────────────────────────────────────────────────────────
 app.use(cors({ origin: true, credentials: true }));
@@ -114,6 +139,20 @@ app.get('/api/me', auth, (req, res) => {
   res.json({ id: req.user.id, username: req.user.username });
 });
 
+app.get('/api/lookup/:key', auth, (req, res) => {
+  const row = db.prepare('SELECT data FROM lookup WHERE key = ?').get(req.params.key);
+  if(!row) return res.status(404).json({ error: 'Lookup key not found' });
+  res.json(JSON.parse(row.data));
+});
+
+app.put('/api/lookup/:key', auth, (req, res) => {
+  const data = JSON.stringify(req.body || {});
+  db.prepare(`INSERT INTO lookup (key, data)
+              VALUES (?, ?)
+              ON CONFLICT(key) DO UPDATE SET data = excluded.data`).run(req.params.key, data);
+  res.json({ ok: true });
+});
+
 app.post('/api/change-password', auth, (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'New password too short' });
@@ -125,14 +164,32 @@ app.post('/api/change-password', auth, (req, res) => {
 
 // ── GENERIC CRUD helper ───────────────────────────────────────────────────────
 function crudRoutes(table) {
+  const wrap = (handler) => async (req, res) => {
+    try {
+      await handler(req, res);
+    } catch (err) {
+      console.error(`[${table}] API error`, err);
+      res.status(500).json({ error: err.message || 'Server error' });
+    }
+  };
+
   // GET all
-  app.get(`/api/${table}`, auth, (req, res) => {
+  app.get(`/api/${table}`, auth, wrap((req, res) => {
     const rows = db.prepare(`SELECT id, data FROM ${table} WHERE user_id = ?`).all(req.user.id);
     res.json(rows.map(r => ({ ...JSON.parse(r.data), id: r.id })));
-  });
+  }));
+
+  // POST create single item
+  app.post(`/api/${table}`, auth, wrap((req, res) => {
+    const id = req.body.id || `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const data = JSON.stringify({ ...req.body, id });
+    db.prepare(`INSERT INTO ${table} (id, user_id, data, updated_at)
+                VALUES (?, ?, ?, datetime('now'))`).run(id, req.user.id, data);
+    res.json({ ok: true, id });
+  }));
 
   // PUT upsert single item
-  app.put(`/api/${table}/:id`, auth, (req, res) => {
+  app.put(`/api/${table}/:id`, auth, wrap((req, res) => {
     const { id } = req.params;
     const data = JSON.stringify({ ...req.body, id });
     db.prepare(`INSERT INTO ${table} (id, user_id, data, updated_at)
@@ -140,16 +197,16 @@ function crudRoutes(table) {
                 ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at
                 WHERE user_id = ?`).run(id, req.user.id, data, req.user.id);
     res.json({ ok: true });
-  });
+  }));
 
   // DELETE single item
-  app.delete(`/api/${table}/:id`, auth, (req, res) => {
+  app.delete(`/api/${table}/:id`, auth, wrap((req, res) => {
     db.prepare(`DELETE FROM ${table} WHERE id = ? AND user_id = ?`).run(req.params.id, req.user.id);
     res.json({ ok: true });
-  });
+  }));
 
   // BULK replace (full sync)
-  app.post(`/api/${table}/sync`, auth, (req, res) => {
+  app.post(`/api/${table}/sync`, auth, wrap((req, res) => {
     const items = req.body;
     if (!Array.isArray(items)) return res.status(400).json({ error: 'Array expected' });
     const del  = db.prepare(`DELETE FROM ${table} WHERE user_id = ?`);
@@ -159,7 +216,7 @@ function crudRoutes(table) {
       items.forEach(item => ins.run(item.id, req.user.id, JSON.stringify(item)));
     })();
     res.json({ ok: true, count: items.length });
-  });
+  }));
 }
 
 crudRoutes('fahrten');
@@ -167,11 +224,37 @@ crudRoutes('trucks');
 crudRoutes('fahrer');
 crudRoutes('garagen');
 
+app.get('/api/data', auth, (req, res) => {
+  const getRows = (table) => db.prepare(`SELECT id, data FROM ${table} WHERE user_id = ?`).all(req.user.id).map(r => ({ ...JSON.parse(r.data), id: r.id }));
+  const getKV = (table) => {
+    const row = db.prepare(`SELECT data FROM ${table} WHERE user_id = ?`).get(req.user.id);
+    return row ? JSON.parse(row.data) : {};
+  };
+  res.json({
+    fahrten: getRows('fahrten'),
+    trucks: getRows('trucks'),
+    fahrer: getRows('fahrer'),
+    garagen: getRows('garagen'),
+    roads: getKV('roads'),
+    explore: getKV('explore')
+  });
+});
+
 // ── KV routes (roads + explore) ───────────────────────────────────────────────
 ['roads','explore'].forEach(table => {
   app.get(`/api/${table}`, auth, (req, res) => {
     const row = db.prepare(`SELECT data FROM ${table} WHERE user_id = ?`).get(req.user.id);
     res.json(row ? JSON.parse(row.data) : {});
+  });
+  app.post(`/api/${table}`, auth, (req, res) => {
+    const data = JSON.stringify(req.body);
+    const existing = db.prepare(`SELECT user_id FROM ${table} WHERE user_id = ?`).get(req.user.id);
+    if (existing) {
+      db.prepare(`UPDATE ${table} SET data = ?, updated_at = datetime('now') WHERE user_id = ?`).run(data, req.user.id);
+    } else {
+      db.prepare(`INSERT INTO ${table} (user_id, data, updated_at) VALUES (?, ?, datetime('now'))`).run(req.user.id, data);
+    }
+    res.json({ ok: true });
   });
   app.put(`/api/${table}`, auth, (req, res) => {
     const data = JSON.stringify(req.body);
